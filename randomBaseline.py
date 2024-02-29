@@ -14,8 +14,8 @@ class RandomBaselineModel:
 
 
 def main():
-    corpus = Corpus(partition="train", annotation_layer="gec-only")
-    train_corpus, test_corpus = train_test_split(corpus.get_documents(), test_size=0.25, random_state=42)
+    train_corpus = Corpus(partition="train", annotation_layer="gec-only")
+    test_corpus = Corpus(partition="test", annotation_layer="gec-only")
 
     modelRandom = RandomBaselineModel(list_of_classes)
 

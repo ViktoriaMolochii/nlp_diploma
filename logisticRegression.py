@@ -1,10 +1,15 @@
+import matplotlib
 from ua_gec import Corpus
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from ua_gec import AnnotatedText
 from usefull_methods import list_of_classes, calc_accuracy_precision
 from featuresVectorCreator import FeaturesVectorCreator
-
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+matplotlib.use('agg')
 
 def main():
     train_corpus = Corpus(partition="train", annotation_layer="gec-only")
@@ -32,7 +37,19 @@ def main():
 
     acc, prec = calc_accuracy_precision(y_test, y_pred, zero_division=True)
 
-    # from sklearn.model_selection import cross_val_score
+    # Confusion Matrix
+    # cm = confusion_matrix(y_test, y_pred)
+    # plt.figure(figsize=(10, 8))
+    # sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=list_of_classes, yticklabels=list_of_classes)
+    # plt.xlabel('Predicted')
+    # plt.ylabel('True')
+    # plt.title('Confusion Matrix')
+    # plt.tight_layout()
+    # plt.savefig('confusion_matrix.png')
+    # plt.close()
+
+
+
     # accuracy_scores = cross_val_score(lr, X_train, y_train, cv=5)
     # print(accuracy_scores.mean()) 0.8020755358965636
     # print(accuracy_scores.std()) 0.0005549338696937577
