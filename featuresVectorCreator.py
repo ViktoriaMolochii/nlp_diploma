@@ -4,6 +4,7 @@ import editdistance
 import string
 import pandas as pd
 import stanza
+import tqdm
 
 
 class FeaturesVectorCreator:
@@ -29,7 +30,7 @@ class FeaturesVectorCreator:
         }
 
         if include_ud_features:
-            self._stanza = stanza.Pipeline(lang='uk')
+            self._stanza = stanza.Pipeline(lang='uk', download_method=None)
             self.features_methods_map.update({
                 'morphosyntactic_feats_changed': self._morphosyntactic_feats_changed,
             })
@@ -64,7 +65,9 @@ class FeaturesVectorCreator:
         return normalized_distance
 
     def _error_class(self, ann, doc):
-        error = ann.meta["error_type"]
+        error = ann.meta.get("error_type")
+        if error is None:
+            return -1
         return self.list_of_classes.index(error)
 
     def _normalize_num_tokens(self, dataframe_column):
@@ -74,39 +77,50 @@ class FeaturesVectorCreator:
 
     def _morphosyntactic_feats_changed(self, ann, doc):
 
+        # TODO: This implementation is very slow for long texts.
+        #       We should prepare UA-GEC so that we have annotated
+        #       sentences, and work with that.
+
         # Remove annotations other than `ann`
         doc = copy.deepcopy(doc)
         for ann_ in doc.iter_annotations():
             if ann_ != ann:
-                doc.apply_annotation(ann_)
+                doc.apply_correction(ann_)
 
         # Parse source and target texts
-        source = self._stanza(doc.source)
-        target = self._stanza(doc.target)
+        source = self._stanza(doc.get_original_text())
+        target = self._stanza(doc.get_corrected_text())
 
-        # Check features change withing the annotation
-        # TODO
-        has_changed = False
+        # Check features change. Ideally, we should look at the correction
+        # span only. However, to make implementation simpler, we compare
+        # the whole texts.
+        src_toks = list(source.iter_tokens())
+        tgt_toks = list(target.iter_tokens())
+        if len(src_toks) != len(tgt_toks):
+            return 1
 
+        for tok_src, tok_tgt in zip(src_toks, tgt_toks):
+            feats_src = tok_src.to_dict()[0].get('feats', '')
+            feats_tgt = tok_tgt.to_dict()[0].get('feats', '')
+            if feats_src != feats_tgt:
+                return 1
+        
+        return 0
 
-        return has_changed
-
-    def features_vector_example(self, text):
-        features_vector = []
-        for ann in text.iter_annotations():
-            features_vector.append({
-                feature: self.features_methods_map[feature](ann) for feature in self.features_list_no_err
-            })
-        return features_vector
+    def features_for_text(self, annotated_text):
+        feature_matrix = []
+        for ann in annotated_text.iter_annotations():
+            features = [feature_method(ann, annotated_text)
+                        for feature_method in self.features_methods_map.values()]
+            feature_matrix.append(features)
+        return feature_matrix
 
     def fit(self, corpus):
         #features_df = pd.DataFrame(columns=self.features_list)
         feature_matrix = []
-        for doc in corpus:
-            for ann in doc.annotated.iter_annotations():
-                features = [features_method(ann, doc) for feature_method in self.features_methods_map.values()]
-                features_matrix.append(features)
-        features_df = pd.DataFrame(features_matrix, columns=self.features_list)
+        for doc in tqdm.tqdm(corpus):
+            feature_matrix += self.features_for_text(doc.annotated)
+        features_df = pd.DataFrame(feature_matrix, columns=self.features_list)
         self._normalize_num_tokens(features_df['num_source_tokens'])
         self._normalize_num_tokens(features_df['num_target_tokens'])
         return features_df
