@@ -6,3 +6,4 @@ ua-gec
 matplotlib
 seaborn
 tqdm
+phunspell

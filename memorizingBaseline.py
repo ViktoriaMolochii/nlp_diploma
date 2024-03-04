@@ -1,7 +1,7 @@
 from ua_gec import Corpus, AnnotatedText
 from majorityBaseline import MajorityBaselineModel
 
-from usefull_methods import get_real_labels, plot_unique_y, list_of_classes, calc_accuracy_precision
+from usefull_methods import get_real_labels, plot_unique_y, list_of_classes, calc_metrics
 
 class MemorizingBaselineModel:
     def __init__(self, train_corpus, majority_class, list_of_classes):
@@ -76,7 +76,7 @@ def main():
 
     plot_unique_y(y_test, y_pred)
 
-    acc, prec = calc_accuracy_precision(y_test, y_pred, zero_division=True)
+    acc, prec, recall, f1 = calc_metrics(y_test, y_pred, zero_division=True)
     #  in y_pred there is no predicted 6 class so we get warning:
     #  Precision is ill-defined and being set to 0.0 in labels with no predicted samples.
     #  Use `zero_division` parameter to control this behavior.

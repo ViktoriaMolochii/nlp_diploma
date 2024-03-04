@@ -5,7 +5,7 @@ import string
 import pandas as pd
 import stanza
 import tqdm
-
+import phunspell
 
 class FeaturesVectorCreator:
     """Generates features vectors for annotated texts.
@@ -21,7 +21,7 @@ class FeaturesVectorCreator:
             'is_source_empty': self._is_empty,
             'is_source_punctuation_only': self._is_punctuation_only,
             'num_source_tokens': self._num_tokens,
-            # 'is_source_dictionary_words': self._your_dictionary_words_method,
+            'is_source_dictionary_words': self._is_source_dictionary_words,
             'is_target_empty': self._is_empty,
             'is_target_punctuation_only': self._is_punctuation_only,
             'num_target_tokens': self._num_tokens,
@@ -40,6 +40,8 @@ class FeaturesVectorCreator:
         features_list_error_removed.remove("error_class")
         self.features_list_no_err = features_list_error_removed
 
+        self.spellchecker = phunspell.Phunspell('uk_UA')
+
     def _is_empty(self, ann, doc):
         text = ann.source_text
         return 1 if not text else 0
@@ -54,6 +56,13 @@ class FeaturesVectorCreator:
     def _num_tokens(self, ann, doc):
         text = ann.source_text
         return len(text.split())
+
+    def _is_source_dictionary_words(self, ann, doc):
+        text = ann.source_text
+        for word in text.split():
+            if not self.spellchecker.lookup(word):
+                return 0
+        return 1
 
     def _normalize_levenshtein_distance(self, ann, doc):
         source, target = ann.source_text, ann.top_suggestion

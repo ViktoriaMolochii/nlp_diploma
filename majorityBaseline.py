@@ -1,7 +1,5 @@
 from ua_gec import Corpus
-from sklearn.model_selection import train_test_split
-
-from usefull_methods import list_of_classes, calc_accuracy_precision, get_real_labels
+from usefull_methods import list_of_classes, calc_metrics, get_real_labels
 
 
 class MajorityBaselineModel:
@@ -45,7 +43,7 @@ def main():
 
     y_test = get_real_labels(test_corpus, list_of_classes)
 
-    acc, prec = calc_accuracy_precision(y_test, y_pred, zero_division=True)
+    acc, prec, recall, f1 = calc_metrics(y_test, y_pred, zero_division=True)
 
 
 if __name__ == "__main__":

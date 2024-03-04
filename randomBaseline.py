@@ -1,8 +1,6 @@
 from ua_gec import Corpus
 import random
-from sklearn.model_selection import train_test_split
-
-from usefull_methods import get_real_labels, list_of_classes, calc_accuracy_precision
+from usefull_methods import get_real_labels, list_of_classes, calc_metrics
 
 
 class RandomBaselineModel:
@@ -26,7 +24,7 @@ def main():
         for ann in doc.annotated.iter_annotations():
             y_pred.append(list_of_classes.index(modelRandom.predict(ann)))
 
-    acc, prec = calc_accuracy_precision(y_test, y_pred, zero_division=True)
+    acc, prec, recall, f1 = calc_metrics(y_test, y_pred, zero_division=True)
 
 
 if __name__ == "__main__":

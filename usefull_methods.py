@@ -1,5 +1,5 @@
 from collections import Counter
-from sklearn.metrics import precision_score, accuracy_score
+from sklearn.metrics import precision_score, accuracy_score, recall_score, f1_score
 
 list_of_classes = ["Spelling", "Punctuation", "G/Case", "G/Gender", "G/Number", "G/Aspect", "G/Tense",
                    "G/VerbVoice", "G/PartVoice", "G/VerbAForm", "G/Prep", "G/Participle",
@@ -16,12 +16,20 @@ def get_real_labels(corpus, list_of_classes):
     return real_labels
 
 
-def calc_accuracy_precision(y_test, y_pred, zero_division=False):
+def calc_metrics(y_test, y_pred, zero_division=False):
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
+
     precision = precision_score(y_test, y_pred, average='weighted', zero_division='warn' if zero_division else None)
     print("Precision:", precision)
-    return accuracy, precision
+
+    recall = recall_score(y_test, y_pred, average='weighted', zero_division='warn' if zero_division else None)
+    print("Recall:", recall)
+
+    f1 = f1_score(y_test, y_pred, average='weighted', zero_division='warn' if zero_division else None)
+    print("F1 Score:", f1)
+
+    return accuracy, precision, recall, f1
 
 
 def plot_unique_y(y_test, y_pred):
