@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import matplotlib
 from ua_gec import Corpus
 import pandas as pd
@@ -55,7 +56,7 @@ def main():
     # print(accuracy_scores.std()) 0.0005549338696937577
 
     example = AnnotatedText("Вітаю {тбе=>тебе} з Днем Народження {?=>!}")
-    features_list = features_creator.features_vector_example(example)
+    features_list = features_creator.features_for_text(example)
 
     for features in features_list:
         X_ann = pd.DataFrame(features, index=[0])
