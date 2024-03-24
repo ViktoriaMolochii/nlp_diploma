@@ -15,7 +15,7 @@ class FeaturesVectorCreator:
         include_ud_features (bool): Whether to include Universal Dependencies features.
     """
 
-    def __init__(self, list_of_classes, include_ud_features=False):
+    def __init__(self, list_of_classes, include_ud_features=True):
         self.list_of_classes = list_of_classes
         self.features_methods_map = {
             'is_source_empty': self._is_empty,
@@ -77,7 +77,10 @@ class FeaturesVectorCreator:
         error = ann.meta.get("error_type")
         if error is None:
             return -1
-        return self.list_of_classes.index(error)
+        try:
+            return self.list_of_classes.index(error)
+        except ValueError:
+            return -1
 
     def _normalize_num_tokens(self, dataframe_column):
         max_tokens_source = dataframe_column.max()
