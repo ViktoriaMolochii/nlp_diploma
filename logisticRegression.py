@@ -39,6 +39,16 @@ class LogisticRegressionModel:
 
         y_pred = self.lr.predict(X_test)
 
+        cm = confusion_matrix(y_test, y_pred)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=list_of_classes, yticklabels=list_of_classes)
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title('Confusion Matrix')
+        plt.tight_layout()
+        plt.savefig('confusion_matrix.png')
+        plt.close()
+
         acc, prec, recall, f1 = calc_metrics(y_test, y_pred, zero_division=True)
 
         return acc, prec, recall, f1
@@ -79,6 +89,11 @@ def main():
     model.train()
     acc, prec, recall, f1 = model.test()
     example_predictions = model.test_example("Вітаю {тбе=>тебе} з Днем Народження {?=>!}")
+
+    one = AnnotatedText("Привіт Настя!")
+    two = "Привіт, Насте!"
+    print(one.annotate())
+
 
 if __name__ == "__main__":
     main()

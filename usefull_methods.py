@@ -3,8 +3,7 @@ from sklearn.metrics import precision_score, accuracy_score, recall_score, f1_sc
 
 list_of_classes = ["Spelling", "Punctuation", "G/Case", "G/Gender", "G/Number", "G/Aspect", "G/Tense",
                    "G/VerbVoice", "G/PartVoice", "G/VerbAForm", "G/Prep", "G/Participle",
-                   "G/UngrammaticalStructure", "G/Comparison", "G/Conjunction", "G/Particle", "G/Other",
-                   "F/Style", "F/Calque", "F/Collocation", "F/PoorFlow", "F/Repetition", "F/Other"]
+                   "G/UngrammaticalStructure", "G/Comparison", "G/Conjunction", "G/Particle", "G/Other", "Other"]
 
 
 def get_real_labels(corpus, list_of_classes):
