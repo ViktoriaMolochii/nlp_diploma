@@ -2,7 +2,8 @@
 import matplotlib
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from ua_gec import Corpus, AnnotatedText
+from ua_gec import AnnotatedText
+from corpus import Corpus
 from usefull_methods import list_of_classes, calc_metrics
 from featuresVectorCreator import FeaturesVectorCreator
 from sklearn.model_selection import cross_val_score
@@ -10,6 +11,7 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 matplotlib.use('agg')
+
 
 class LogisticRegressionModel:
     def __init__(self):
