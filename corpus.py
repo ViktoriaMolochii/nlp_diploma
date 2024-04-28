@@ -13,12 +13,11 @@ class Corpus:
 
     def __iter__(self):
         # Pretend that each sentence is a document
-        with open(self.path, "r") as f:
+        with open(self.path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 annotated = AnnotatedText(line)
                 yield Document(annotated)
-
 
 @dataclass
 class Document:

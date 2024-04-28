@@ -4,7 +4,6 @@ from ua_gec import AnnotatedText
 
 
 class TestMorphosyntacticFeatsChanged:
-
     @pytest.fixture(scope="class")
     def fvc(self):
         # Specific classes are not important for these tests
@@ -30,3 +29,5 @@ class TestMorphosyntacticFeatsChanged:
         ann_1 = doc.get_annotations()[1]
         assert fvc._morphosyntactic_feats_changed(ann_0, doc) == 1
         assert fvc._morphosyntactic_feats_changed(ann_1, doc) == 0
+
+

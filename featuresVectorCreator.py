@@ -6,6 +6,7 @@ import pandas as pd
 import stanza
 import tqdm
 import phunspell
+import numpy as np
 
 class FeaturesVectorCreator:
     """Generates features vectors for annotated texts.
@@ -30,10 +31,13 @@ class FeaturesVectorCreator:
         }
 
         if include_ud_features:
-            self._stanza = stanza.Pipeline(lang='uk', download_method=None)
+            self._stanza = stanza.Pipeline(lang='uk' , download_method=None)
             self.features_methods_map.update({
                 'morphosyntactic_feats_changed': self._morphosyntactic_feats_changed,
             })
+
+        self.feature_index_map = ["Gender", "Case", "Number", "Animacy", "NameType", "PronType", "Tense", "Person"]
+        self.morphosyntactic_features_list = [f"is_{f.lower()}_changed" for f in self.feature_index_map]
 
         self.features_list = list(self.features_methods_map.keys())
         features_list_error_removed = self.features_list.copy()
@@ -87,52 +91,96 @@ class FeaturesVectorCreator:
         dataframe_column_upd = dataframe_column.div(max_tokens_source)
         return dataframe_column_upd
 
-    def _morphosyntactic_feats_changed(self, ann, doc):
+    def get_source_target_feats(self, ann, doc):
 
+        source = self._stanza(ann.source_text)
+        target = self._stanza(ann.top_suggestion)
+
+        src_toks = list(source.iter_tokens())
+        tgt_toks = list(target.iter_tokens())
+
+        return src_toks, tgt_toks
+
+    def _morphosyntactic_feats_changed(self, ann, doc):
         # TODO: This implementation is very slow for long texts.
         #       We should prepare UA-GEC so that we have annotated
         #       sentences, and work with that.
 
-        # Remove annotations other than `ann`
-        doc = copy.deepcopy(doc)
-        for ann_ in doc.iter_annotations():
-            if ann_ != ann:
-                doc.apply_correction(ann_)
+        src_toks, tgt_toks = self.get_source_target_feats(ann, doc)
 
-        # Parse source and target texts
-        source = self._stanza(doc.get_original_text())
-        target = self._stanza(doc.get_corrected_text())
+        labels_to_return = list(np.zeros(len(self.feature_index_map) + 1, dtype=float))
+        feats_index_map = self.feature_index_map
 
-        # Check features change. Ideally, we should look at the correction
-        # span only. However, to make implementation simpler, we compare
-        # the whole texts.
-        src_toks = list(source.iter_tokens())
-        tgt_toks = list(target.iter_tokens())
-        if len(src_toks) != len(tgt_toks):
-            return 1
+        if len(src_toks) != len(tgt_toks):  # !!!!!!! it's better to fix this part, cuz it's unlogical
+            return [1.0, *list(np.zeros(len(feats_index_map), dtype=float))]
 
         for tok_src, tok_tgt in zip(src_toks, tgt_toks):
             feats_src = tok_src.to_dict()[0].get('feats', '')
             feats_tgt = tok_tgt.to_dict()[0].get('feats', '')
             if feats_src != feats_tgt:
-                return 1
-        
-        return 0
+                changed_feats = self._what_was_changed(feats_src, feats_tgt, feats_index_map, labels_to_return[1:])
+                labels_to_return = [float(changed_feats.sum() > 1), *list(changed_feats)]
+                # labels_to_return = [1.0, *list(changed_feats)] # заходження в іфку могло бути спровоковано пунктуацією, що не є морфол
+                # return labels_to_return # 'if' can be called more than once
+        return labels_to_return
+
+    def _get_present_features(self, feats_string):
+        present_feats = {}
+        if feats_string:
+            feats_parts = feats_string.split("|")
+            for part in feats_parts:
+                if '=' in part:
+                    feat, value = part.split('=')
+                    present_feats[feat] = value
+        return present_feats
+
+    def _what_was_changed(self, feats_src, feats_tgt, feat_idx_map, resulted_changed_feats):
+        src_feats_dict = self._get_present_features(feats_src)
+        tgt_feats_dict = self._get_present_features(feats_tgt)
+
+        result_keys = []
+
+        set_1 = set(src_feats_dict.keys())
+        set_2 = set(tgt_feats_dict.keys())
+
+        common_keys = list(set(set_1 & set_2))
+
+        for key in common_keys:
+            if src_feats_dict[key] != tgt_feats_dict[key]:
+                result_keys.append(key)
+
+        unique_keys_from_dict_1 = list(set_1 - set_2)
+        unique_keys_from_dict_2 = list(set_2 - set_1)
+
+        result_keys.extend(unique_keys_from_dict_1)
+        result_keys.extend(unique_keys_from_dict_2)
+
+        for key in result_keys:
+            if key not in feat_idx_map:
+                continue
+            resulted_changed_feats[feat_idx_map.index(key)] = 1
+        return np.array(resulted_changed_feats)
 
     def features_for_text(self, annotated_text):
         feature_matrix = []
         for ann in annotated_text.iter_annotations():
-            features = [feature_method(ann, annotated_text)
-                        for feature_method in self.features_methods_map.values()]
+            features = []
+            for feature_method in self.features_methods_map.values():
+                labels = feature_method(ann, annotated_text)
+                if type(labels) == list:
+                    features.extend(labels)
+                else:
+                    features.append(float(labels))
+
             feature_matrix.append(features)
         return feature_matrix
 
     def fit(self, corpus):
-        #features_df = pd.DataFrame(columns=self.features_list)
         feature_matrix = []
         for doc in tqdm.tqdm(corpus):
             feature_matrix += self.features_for_text(doc.annotated)
-        features_df = pd.DataFrame(feature_matrix, columns=self.features_list)
+        columns_names = self.features_list + self.morphosyntactic_features_list
+        features_df = pd.DataFrame(feature_matrix, columns=columns_names)
         self._normalize_num_tokens(features_df['num_source_tokens'])
         self._normalize_num_tokens(features_df['num_target_tokens'])
         return features_df
@@ -146,5 +194,6 @@ class FeaturesVectorCreator:
             return pd.read_csv(output_file)
 
         features_df = features_creator.fit(corpus)
+        print(features_df.head(10))
         features_creator.save_df(features_df, output_file)
         return features_df
