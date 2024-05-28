@@ -7,6 +7,7 @@ import stanza
 import tqdm
 import phunspell
 import numpy as np
+pd.set_option('display.max_columns', None)
 
 class FeaturesVectorCreator:
     """Generates features vectors for annotated texts.
@@ -36,7 +37,7 @@ class FeaturesVectorCreator:
                 'morphosyntactic_feats_changed': self._morphosyntactic_feats_changed,
             })
 
-        self.feature_index_map = ["Gender", "Case", "Number", "Animacy", "NameType", "PronType", "Tense", "Person"]
+        self.feature_index_map = ["Gender", "Case", "Number", "Animacy", "Aspect", "PronType", "Tense", "Person", "VerbForm" ]
         self.morphosyntactic_features_list = [f"is_{f.lower()}_changed" for f in self.feature_index_map]
 
         self.features_list = list(self.features_methods_map.keys())
@@ -181,8 +182,8 @@ class FeaturesVectorCreator:
             feature_matrix += self.features_for_text(doc.annotated)
         columns_names = self.features_list + self.morphosyntactic_features_list
         features_df = pd.DataFrame(feature_matrix, columns=columns_names)
-        self._normalize_num_tokens(features_df['num_source_tokens'])
-        self._normalize_num_tokens(features_df['num_target_tokens'])
+        features_df['num_source_tokens'] = self._normalize_num_tokens(features_df['num_source_tokens'])
+        features_df['num_target_tokens'] = self._normalize_num_tokens(features_df['num_target_tokens'])
         return features_df
 
     def save_df(self, features_df, path):
@@ -191,9 +192,9 @@ class FeaturesVectorCreator:
     def fit_and_save_features(self, corpus, features_creator, output_file):
         if os.path.exists(output_file):
             print(f"Features file '{output_file}' already exists. Skipping fitting and saving.")
+            output_csv = pd.read_csv(output_file)
             return pd.read_csv(output_file)
 
         features_df = features_creator.fit(corpus)
-        print(features_df.head(10))
         features_creator.save_df(features_df, output_file)
         return features_df

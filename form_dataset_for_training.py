@@ -152,11 +152,9 @@ def form_dataset_for_training(annotated_text_flatten, tokenizer):
 
 def main():
     # Завантаження набору даних з файлу
-    with open('annotated_text_flatten.pkl', 'rb') as f:
+    with open('data/annotated_text_flatten.pkl', 'rb') as f:
         loaded_data = pickle.load(f)
 
-
-    print("DEBUG !!!!!!")
     df_no_mask = form_dataset_for_training(loaded_data[:10], tokenizer)
 
 
